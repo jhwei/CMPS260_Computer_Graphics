@@ -1,2 +1,7 @@
-# CMPS260_Computer_Graphics
-assgiment for CMPS260
+# 2017 Fall CMPS260 Computer Graphics
+
+**Author**: Jiahui Wei
+
+This is the repository for CMPS 260 Computer Graphics.
+
+This repo will contain the codes for assignments, data and so on.
