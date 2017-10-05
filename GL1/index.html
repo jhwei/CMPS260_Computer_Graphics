@@ -76,10 +76,10 @@
             loader.load('models/expression_2.obj', function (object) {
                 obj2 = object;
                 object.position.x = 2;
-                object.traverse(function (child) {
-                    if (child instanceof THREE.Mesh)
-                        child.material.side = THREE.DoubleSide;
-                });
+                // object.traverse(function (child) {
+                //     if (child instanceof THREE.Mesh)
+                //         child.material.side = THREE.DoubleSide;
+                // });
                 scene.add(object);
             });
 
@@ -107,6 +107,7 @@
         function animate() {
             requestAnimationFrame(animate);
             obj1.rotation.y += 0.01;
+            obj2.rotation.y -= 0.01;
             controls.update();
             render();
         }
