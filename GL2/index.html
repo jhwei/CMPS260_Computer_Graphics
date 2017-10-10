@@ -38,7 +38,7 @@
     <script>
         var container;
         var camera, controls, scene, renderer;
-        var obj1, obj2;
+        var obj;
 
         init();
         animate();
@@ -71,15 +71,6 @@
                     if (child instanceof THREE.Mesh)
                         child.material.side = THREE.DoubleSide;
                 });
-                scene.add(object);
-            });
-            loader.load('models/expression_2.obj', function (object) {
-                obj2 = object;
-                object.position.x = 2;
-                // object.traverse(function (child) {
-                //     if (child instanceof THREE.Mesh)
-                //         child.material.side = THREE.DoubleSide;
-                // });
                 scene.add(object);
             });
 
