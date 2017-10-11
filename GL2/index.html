@@ -3,7 +3,7 @@
 
 <head>
     <meta charset=utf-8>
-    <title>GL2 for CMPS260</title>
+    <title>GL2: View A Mesh and Rotate It</title>
     <style>
         body {
             color: #000;
@@ -12,14 +12,14 @@
             text-align: center;
             font-weight: bold;
             background-color: #fff;
-            margin: 0px;
+            margin: 2px;
             overflow: hidden;
         }
 
         #headline {
             color: #fff;
             position: absolute;
-            top: 0px;
+            top: 1px;
             width: 100%;
             padding: 5px;
         }
@@ -28,7 +28,7 @@
 
 <body>
     <div id="headline">
-        <h1>GL1 for CMPS260</h1>
+        <h1>GL2: View A Mesh and Rotate It</h1>
         <h3>By Jiahui Wei</h3>
     </div>
     <div id="container"></div>
@@ -83,7 +83,8 @@
 
                 objloader.load('model/merge3d.obj', function (object) {
                     obj = object;
-                    object.position.x = 0;
+                    object.position.y = -20;
+                    object.position.x=20;
                     object.children[0].material.forEach(function (element) {
                         element.transparent = false;
                     });
