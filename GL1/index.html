@@ -38,7 +38,7 @@
     <script>
         var container;
         var camera, controls, scene, renderer;
-        var obj1=null, obj2=null;
+        var obj1 = null, obj2 = null;
 
         init();
         animate();
@@ -107,9 +107,9 @@
         function animate() {
             requestAnimationFrame(animate);
             if (obj1 != null)
-            obj1.rotation.y += 0.01;
+                obj1.rotation.y += 0.01;
             if (obj2 != null)
-            obj2.rotation.y -= 0.01;
+                obj2.rotation.y -= 0.01;
             controls.update();
             render();
         }
