@@ -119,8 +119,12 @@
             scene.add(ambient);
 
             var directionlight = new THREE.DirectionalLight(0x222222);
-            directionlight.position.set(1, -0.5, 200);
+            directionlight.position.set(20, 10, 1000);
             scene.add(directionlight);
+
+                var light = new THREE.DirectionalLight(0x555555);
+                light.position.set(200, 200, 1000);
+                scene.add(light);
 
             var textureLoader = new THREE.TextureLoader(manager);
 
