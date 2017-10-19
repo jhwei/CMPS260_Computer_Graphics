@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <title>GL3: Add Texture to the 3D Model.</title>
+    <style>
+        body {
+            color: #000;
+            font-family: Monospace;
+            font-size: 13px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #000;
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        #headline {
+            color: #fff;
+            position: absolute;
+            top: 1px;
+            width: 100%;
+            padding: 5px;
+        }
+
+        #loading {
+            width: 400px;
+            height: 30px;
+            border-radius: 15px;
+            position: absolute;
+            top: 45%;
+            left: 40%;
+            background: white;
+            border: 2px solid #fff;
+        }
+
+        #loading>#loading {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 400px;
+            height: 30px;
+            background: navy;
+            border: none;
+        }
+
+        #loading_word {
+            position: relative;
+            top: 40px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="headline">
+        <h1>GL3: Add Texture to the 3D Model.</h1>
+        <h3>By Jiahui Wei</h3>
+    </div>
+
+    <script src="../js/three.min.js"></script>
+    <script src="../js/loaders/OBJLoader.js"></script>
+    <script src="../js/controls/TrackballControls.js"></script>
+    <script src="../js/loaders/MTLLoader.js"></script>
+    <script src="../js/libs/stats.min.js"></script>
+    <script src="../js/libs/dat.gui.min.js"></script>
+    <script src="../js/shaders/NormalMapShader.js"></script>
+    <script>
+        var container, stats;
+        var camera, controls, scene, renderer;
+        var mesh, texture_map, normal_map;
+
+        var progress = document.createElement('div');
+        progress.setAttribute("id", "loading");
+        var progressBar = document.createElement('div');
+        progressBar.setAttribute("id", "loading");
+        progress.appendChild(progressBar);
+
+        var word_loading = document.createElement('h2');
+        word_loading.setAttribute('id', "loading_word");
+        word_loading.innerHTML = '0% Loaded';
+        progress.appendChild(word_loading)
+
+        document.body.appendChild(progress);
+
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function (item, loaded, total) {
+            progressBar.style.width = (loaded / total * 100) + '%';
+            word_loading.innerHTML = parseInt(loaded / total * 100) + '% loaded'
+        };
+        manager.onLoad = function () {
+            document.body.removeChild(progress);
+            document.body.appendChild(container);
+        }
+
+        init();
+        animate();
+
+        function init() {
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.z = 50;
+
+            controls = new THREE.TrackballControls(camera);
+            controls.rotateSpeed = 1.2;
+            controls.zoomSpeed = 1.2;
+            controls.panSpeed = 1.0;
+            controls.noZoom = false;
+            controls.noPan = false;
+            controls.staticMoving = true;
+            controls.dynamicDampingFactor = 0.3;
+            controls.key = [65, 83, 68];
+            controls.addEventListener('change', render);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
+            var ambient = new THREE.AmbientLight(0x888888);
+            scene.add(ambient);
+
+            var directionlight = new THREE.DirectionalLight(0x222222);
+            directionlight.position.set(1, -0.5, 200);
+            scene.add(directionlight);
+
+            var textureLoader = new THREE.TextureLoader(manager);
+
+            var loader = new THREE.MTLLoader(manager);
+            loader.setPath("model/with_normal/");
+            loader.load("merge3d.obj.mtl", function (mtl) {
+                mtl.preload();
+                var objloader = new THREE.OBJLoader(manager);
+                objloader.setMaterials(mtl);
+
+                var onProgress = function (event) {
+                    if (event.lengthComputable) {
+                        var percentComplete = event.loaded / event.total * 100;
+                        var output = 'Download of ' + 'Merge3d: ' + Math.round(percentComplete) + '%';
+                        console.log(output);
+                    }
+                };
+                var onError = function (event) {
+                    var output = 'Error of type "' + event.type + '" occurred when trying to load: ' + event.src;
+                    console.log(output);
+                };
+
+                objloader.load('model/with_normal/merge3d.obj', function (object) {
+                    mesh = object;
+                    object.position.y = 0;
+                    object.position.x = 0;
+                    object.children[0].material.transparent = false;
+                    normal_map = textureLoader.load("model/with_normal/merge3d_NRM_adjust.png");
+                    object.children[0].material.normalMap = normal_map;
+                    texture_map = object.children[0].material.map;
+                    scene.add(object);
+                    console.log('Loading complete. Meshes were attached to: Face With Normal');
+                }, onProgress, onError);
+            })
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            container = document.createElement('div');
+            container.setAttribute("id", 'container');
+            container.appendChild(renderer.domElement);
+
+            window.addEventListener('resize', onWindowResize, false);
+            stats = new Stats();
+            container.appendChild(stats.dom);
+
+
+            var gui = new dat.GUI({
+                width: 200
+            });
+
+            var options = {
+                texture: true,
+                nmap: true
+            };
+
+            var control_texture = gui.add(options, 'texture').name('With Texture');
+            control_texture.onChange(function (value) {
+                if (mesh) {
+                    if (value) {
+                        mesh.children[0].material.map = texture_map;
+                    }
+                    else {
+                        mesh.children[0].material.map = null;
+                    }
+                    mesh.children[0].material.needsUpdate = true;
+                }
+            });
+
+            var control_nmap = gui.add(options, 'nmap').name('With Normal Map');
+            control_nmap.onChange(function (value) {
+                if (mesh) {
+                    if (value) {
+                        mesh.children[0].material.normalMap = normal_map;
+                    }
+                    else {
+                        mesh.children[0].material.normalMap = null;
+                    }
+                    mesh.children[0].material.needsUpdate = true;
+                }
+
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            controls.handleResize();
+            render();
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            render();
+            stats.update();
+        }
+        function render() {
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+
+</html>
