@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8>
+    <title>GL4: Add Lighting to the Scene</title>
+    <style>
+        body {
+            color: #000;
+            font-family: Monospace;
+            font-size: 13px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #000;
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        #headline {
+            color: #fff;
+            position: absolute;
+            top: 1px;
+            width: 100%;
+            padding: 5px;
+        }
+
+        #loading {
+            width: 200px;
+            height: 15px;
+            border-radius: 7.5px;
+            position: absolute;
+            top: 15%;
+            left: 45%;
+            background: white;
+            border: 2px solid #fff;
+        }
+
+        #loading>#loading {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 200px;
+            height: 15px;
+            background: navy;
+            border: none;
+        }
+
+        #loading_word {
+            position: relative;
+            top: 18px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="headline">
+        <h1>GL4: Add Lighting to the Scene</h1>
+        <h3>By Jiahui Wei</h3>
+    </div>
+
+    <script src="../three.js/build/three.min.js"></script>
+    <script src="../three.js/examples/js/loaders/OBJLoader.js"></script>
+    <script src="../three.js/examples/js/controls/TrackballControls.js"></script>
+    <script src="../three.js/examples/js/loaders/MTLLoader.js"></script>
+    <script src="../three.js/examples/js/libs/stats.min.js"></script>
+    <script src="../three.js/examples/js/libs/dat.gui.min.js"></script>
+    <script>
+        var container, stats;
+        var camera, controls, scene, renderer;
+        var mesh, pointLight, sphere;
+        var prev_value;
+
+        var progress = document.createElement('div');
+        progress.setAttribute("id", "loading");
+        var progressBar = document.createElement('div');
+        progressBar.setAttribute("id", "loading");
+        progress.appendChild(progressBar);
+
+        var word_loading = document.createElement('h2');
+        word_loading.setAttribute('id', "loading_word");
+        word_loading.innerHTML = '0% Loaded';
+        progress.appendChild(word_loading)
+
+        document.body.appendChild(progress);
+
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function (item, loaded, total) {
+            progressBar.style.width = (loaded / total * 100) + '%';
+            word_loading.innerHTML = parseInt(loaded / total * 100) + '% loaded'
+        };
+        manager.onLoad = function () {
+            document.body.removeChild(progress);
+        }
+
+        init();
+        animate();
+
+        function init() {
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.z = 50;
+
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            scene.add(camera);
+
+            var ambient = new THREE.AmbientLight(0x333333);
+            scene.add(ambient);
+
+            pointLight = new THREE.PointLight(0x222222, 10, 100, 2);
+            pointLight.position.set(0, 0, 50);
+            scene.add(pointLight);
+
+            sphere = new THREE.SphereGeometry(0.5, 16, 8);
+            pointLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0xffffff })));
+
+            var textureLoader = new THREE.TextureLoader(manager);
+
+            var loader = new THREE.MTLLoader(manager);
+            loader.setPath("model/with_normal/");
+            loader.load("merge3d.obj.mtl", function (mtl) {
+                mtl.preload();
+                var objloader = new THREE.OBJLoader(manager);
+                objloader.setMaterials(mtl);
+
+                var onProgress = function (event) {
+                    if (event.lengthComputable) {
+                        var percentComplete = event.loaded / event.total * 100;
+                        var output = 'Download of ' + 'Merge3d: ' + Math.round(percentComplete) + '%';
+                        console.log(output);
+                    }
+                };
+                var onError = function (event) {
+                    var output = 'Error of type "' + event.type + '" occurred when trying to load: ' + event.src;
+                    console.log(output);
+                };
+
+                objloader.load('model/with_normal/merge3d.obj', function (object) {
+                    mesh = object;
+                    object.position.y = 0;
+                    object.position.x = 0;
+                    object.children[0].material.transparent = false;
+                    object.children[0].material.normalMap = textureLoader.load("model/with_normal/merge3d_NRM_adjust.png");
+                    object.children[0].material.side = THREE.DoubleSide;
+                    scene.add(object);
+                    console.log('Loading complete. Meshes were attached to: Face With Normal');
+                }, onProgress, onError);
+            })
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            container = document.createElement('div');
+            document.body.appendChild(container);
+            container.setAttribute("id", 'container');
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.TrackballControls(camera, renderer.domElement);
+            prev_value = 'camera';
+            window.addEventListener('resize', onWindowResize, false);
+            stats = new Stats();
+            container.appendChild(stats.dom);
+
+
+            var gui = new dat.GUI();
+
+            var options = {
+                center: 'camera',
+                color: 0x222222
+            };
+
+            var control_change = gui.add(options, 'center', ['camera', 'object', 'light']).name('Object to Rotate');
+            control_change.onChange(function (value) {
+                if (value == 'camera') {
+                    controls = new THREE.TrackballControls(camera, renderer.domElement);
+                    scene.remove(scene.getObjectById(pointLight.id));
+
+                    var pos = pointLight.getWorldPosition();
+                    scene.add(pointLight);
+                    if (prev_value == 'object') {
+                        pointLight.position.set(pos.x, pos.y, pos.z);
+                    }
+                    prev_value = 'camera';
+                }
+                else if (value == 'light') {
+                    controls = new THREE.TrackballControls(pointLight, renderer.domElement);
+                    scene.remove(scene.getObjectById(pointLight.id));
+
+                    var pos = pointLight.getWorldPosition();
+                    scene.add(pointLight);
+                    if (prev_value == 'object') {
+                        pointLight.position.set(pos.x, pos.y, pos.z);
+                    }
+                    prev_value = 'light';
+                }
+                else if (value == 'object') {
+                    scene.remove(scene.getObjectById(pointLight.id));
+
+                    var pos = pointLight.getWorldPosition();
+                    camera.add(pointLight);
+                    controls = new THREE.TrackballControls(camera, renderer.domElement);
+                    pos = camera.worldToLocal(pos)
+                    pointLight.position.set(pos.x, pos.y, pos.z);
+                    prev_value = 'object';
+                }
+            })
+            var color_change = gui.addColor(options, 'color').name('Light Color');
+            color_change.onChange(function (value) {
+                pointLight.children[0].material.color.setHex(value);
+                pointLight.color.setHex(value);
+            })
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (controls != null)
+                controls.handleResize();
+            render();
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            stats.update();
+            if (controls != null)
+                controls.update();
+            render();
+        }
+        function render() {
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+
+</html>
